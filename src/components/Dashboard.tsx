@@ -30,6 +30,7 @@ import {
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { SleepSession, SleepQuality } from '@/types/sleep';
+import ClientOnly from './ClientOnly';
 
 const StyledCard = styled(Card)`
   transition: all 0.3s ease;
@@ -127,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
         default: return 3;
       }
     });
-    const averageQuality = qualityScores.reduce((a, b) => a + b, 0) / qualitySessions.length;
+    const averageQuality = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length;
 
     const totalEfficiency = sleepSessions.reduce((acc, session) => {
       return acc + (session.duration / (session.duration + session.awakeTime)) * 100;
@@ -211,7 +212,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
               Good {sleepStatus.status === 'morning' ? 'Morning' : sleepStatus.status === 'sleeping' ? 'Evening' : 'Day'}! 🌙
             </Typography>
             <Typography variant="h6" color="text.secondary">
-              {sleepStatus.message} • {currentTime.toLocaleTimeString()}
+              {sleepStatus.message} • <ClientOnly>{currentTime.toLocaleTimeString()}</ClientOnly>
             </Typography>
           </Box>
           
@@ -469,4 +470,5 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
 };
 
 export default Dashboard;
+
 

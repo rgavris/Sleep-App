@@ -34,9 +34,10 @@ export enum SleepQuality {
 
 export interface SleepGoal {
   id: string;
-  targetHours: number;
+  targetDuration: number; // in hours
   targetBedtime: string;
   targetWakeTime: string;
+  qualityTarget: SleepQuality;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

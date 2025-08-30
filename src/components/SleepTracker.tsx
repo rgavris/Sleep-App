@@ -77,7 +77,11 @@ const QualityChip = styled(Chip)<{ quality: SleepQuality }>`
   font-weight: 600;
 `;
 
-const SleepTracker: React.FC = () => {
+interface SleepTrackerProps {
+  onSessionAdd: (session: SleepSession) => void;
+}
+
+const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -127,6 +131,7 @@ const SleepTracker: React.FC = () => {
       };
 
       setSleepSessions(prev => [...prev, newSession]);
+      onSessionAdd(newSession);
       setCurrentSession({});
       setStartTime(null);
       setElapsedTime(0);
@@ -152,7 +157,7 @@ const SleepTracker: React.FC = () => {
         default: return 3;
       }
     });
-    const average = qualityScores.reduce((a, b) => a + b, 0) / qualitySessions.length;
+    const average = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length;
     if (average >= 3.5) return SleepQuality.EXCELLENT;
     if (average >= 2.5) return SleepQuality.GOOD;
     if (average >= 1.5) return SleepQuality.FAIR;
@@ -329,7 +334,7 @@ const SleepTracker: React.FC = () => {
               <InputLabel>Sleep Quality</InputLabel>
               <Select
                 value={currentSession.quality || ''}
-                onChange={(e) => setCurrentSession(prev => ({ ...prev, quality: e.target.value }))}
+                onChange={(e) => setCurrentSession(prev => ({ ...prev, quality: e.target.value as SleepQuality }))}
                 label="Sleep Quality"
               >
                 <MenuItem value={SleepQuality.EXCELLENT}>Excellent</MenuItem>
@@ -385,4 +390,5 @@ const SleepTracker: React.FC = () => {
 };
 
 export default SleepTracker;
+
 

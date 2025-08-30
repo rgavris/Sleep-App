@@ -121,6 +121,9 @@ const SleepGoals: React.FC<SleepGoalsProps> = ({ onGoalsChange }) => {
           targetBedtime: formData.targetBedtime,
           targetWakeTime: formData.targetWakeTime,
           qualityTarget: formData.qualityTarget,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         setGoals(prev => [...prev, newGoal]);
       }
@@ -388,4 +391,5 @@ const SleepGoals: React.FC<SleepGoalsProps> = ({ onGoalsChange }) => {
 };
 
 export default SleepGoals;
+
 
