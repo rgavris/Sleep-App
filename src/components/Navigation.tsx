@@ -181,7 +181,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   primary={item.label}
                   secondary={item.description}
                   secondaryTypographyProps={{
-                    sx: { opacity: 0.7, fontSize: '0.75rem' }
+                    sx: { 
+                      opacity: 0.9, 
+                      fontSize: '0.85rem',
+                      color: '#e2e8f0' // Light gray-blue for better contrast
+                    }
                   }}
                 />
               </StyledListItemButton>
@@ -293,5 +297,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
 };
 
 export default Navigation;
+
 
 
