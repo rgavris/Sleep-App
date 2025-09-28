@@ -15,16 +15,16 @@ const HomePage: React.FC = () => {
   const [sleepGoals, setSleepGoals] = useState<SleepGoal[]>([]);
 
   useEffect(() => {
-    // Load sleep sessions from localStorage
-    const savedSessions = localStorage.getItem('sleepSessions');
-    if (savedSessions) {
-      const sessions = JSON.parse(savedSessions).map((session: any) => ({
+    const fetchSessions = async () => {
+      const response = await fetch('/api/sleep');
+      const data = await response.json();
+      setSleepSessions(data.map((session: any) => ({
         ...session,
         startTime: new Date(session.startTime),
         endTime: new Date(session.endTime),
-      }));
-      setSleepSessions(sessions);
-    }
+      })));
+    };
+    fetchSessions();
 
     // Load sleep goals from localStorage
     const savedGoals = localStorage.getItem('sleepGoals');
@@ -33,18 +33,13 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    // Save sleep sessions to localStorage
-    localStorage.setItem('sleepSessions', JSON.stringify(sleepSessions));
-  }, [sleepSessions]);
+
 
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
 
-  const handleSleepSessionAdd = (newSession: SleepSession) => {
-    setSleepSessions(prev => [...prev, newSession]);
-  };
+
 
   const handleGoalsChange = (goals: SleepGoal[]) => {
     setSleepGoals(goals);
@@ -55,7 +50,7 @@ const HomePage: React.FC = () => {
       case 'dashboard':
         return <Dashboard sleepSessions={sleepSessions} />;
       case 'tracker':
-        return <SleepTracker onSessionAdd={handleSleepSessionAdd} />;
+        return <SleepTracker />;
       case 'analytics':
         return <SleepAnalytics sleepSessions={sleepSessions} />;
       case 'goals':

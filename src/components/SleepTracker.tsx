@@ -19,8 +19,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Slider,
-  Rating,
 } from '@mui/material';
 import {
   PlayArrow,
@@ -30,7 +28,6 @@ import {
   AccessTime,
   TrendingUp,
   Psychology,
-  Favorite,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
@@ -77,17 +74,26 @@ const QualityChip = styled(Chip)<{ quality: SleepQuality }>`
   font-weight: 600;
 `;
 
-interface SleepTrackerProps {
-  onSessionAdd: (session: SleepSession) => void;
-}
-
-const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
+const SleepTracker: React.FC = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentSession, setCurrentSession] = useState<Partial<SleepSession>>({});
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      const response = await fetch('/api/sleep');
+      const data = await response.json();
+      setSleepSessions(data.map((session: any) => ({
+        ...session,
+        startTime: new Date(session.startTime),
+        endTime: new Date(session.endTime),
+      })));
+    };
+    fetchSessions();
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -110,28 +116,32 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
     setOpenDialog(true);
   };
 
-  const saveSession = () => {
+  const saveSession = async () => {
     if (startTime && currentSession.quality) {
       const endTime = new Date();
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60);
       
-      const newSession: SleepSession = {
-        id: Date.now().toString(),
-        startTime,
-        endTime,
-        duration,
+      const newSession = {
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
         quality: currentSession.quality as SleepQuality,
-        deepSleep: currentSession.deepSleep || 0,
-        lightSleep: currentSession.lightSleep || 0,
-        remSleep: currentSession.remSleep || 0,
-        awakeTime: currentSession.awakeTime || 0,
-        heartRate: [],
         notes: currentSession.notes || '',
-        tags: currentSession.tags || [],
       };
 
-      setSleepSessions(prev => [...prev, newSession]);
-      onSessionAdd(newSession);
+      const response = await fetch('/api/sleep', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newSession),
+      });
+      const savedSession = await response.json();
+console.log(savedSession);
+
+      setSleepSessions(prev => [...prev, {
+        ...savedSession,
+        startTime: new Date(savedSession.startTime),
+        endTime: new Date(savedSession.endTime),
+      }]);
       setCurrentSession({});
       setStartTime(null);
       setElapsedTime(0);
@@ -163,6 +173,10 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
     if (average >= 1.5) return SleepQuality.FAIR;
     return SleepQuality.POOR;
   };
+
+  const calculateDuration = (startTime: Date, endTime: Date) => {
+    return Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60);
+  }
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
@@ -264,7 +278,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Psychology sx={{ mr: 1, color: 'primary.main' }} />
                   <Typography variant="body2">
-                    Total Sleep Time: {sleepSessions.reduce((acc, session) => acc + session.duration, 0)} min
+                    Total Sleep Time: {sleepSessions.reduce((acc, session) => acc + calculateDuration(session.startTime, session.endTime), 0)} min
                   </Typography>
                 </Box>
               </CardContent>
@@ -308,7 +322,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
                             {session.startTime.toLocaleDateString()} - {session.startTime.toLocaleTimeString()}
                           </Typography>
                           <Typography variant="body1">
-                            Duration: {session.duration} minutes
+                            Duration: {calculateDuration(session.startTime, session.endTime)} minutes
                           </Typography>
                         </Box>
                         <QualityChip 
@@ -352,32 +366,6 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
               value={currentSession.notes || ''}
               onChange={(e) => setCurrentSession(prev => ({ ...prev, notes: e.target.value }))}
             />
-
-            <Box>
-              <Typography variant="body2" gutterBottom>
-                Sleep Stage Estimates (minutes)
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Deep Sleep"
-                    type="number"
-                    value={currentSession.deepSleep || ''}
-                    onChange={(e) => setCurrentSession(prev => ({ ...prev, deepSleep: Number(e.target.value) }))}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="REM Sleep"
-                    type="number"
-                    value={currentSession.remSleep || ''}
-                    onChange={(e) => setCurrentSession(prev => ({ ...prev, remSleep: Number(e.target.value) }))}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -390,5 +378,3 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ onSessionAdd }) => {
 };
 
 export default SleepTracker;
-
-
