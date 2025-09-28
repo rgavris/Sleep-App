@@ -91,6 +91,10 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
     return () => clearInterval(timer);
   }, []);
 
+  const getDuration = (startTime: Date, endTime: Date) => {
+    return (endTime.getTime() - startTime.getTime()) / (1000 * 60); // duration in minutes
+  }
+
   const getCurrentSleepStatus = () => {
     const hour = currentTime.getHours();
     if (hour >= 22 || hour < 6) {
@@ -109,14 +113,13 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
         averageDuration: 0,
         averageQuality: SleepQuality.GOOD,
         totalSleepTime: 0,
-        sleepEfficiency: 0,
         consistencyScore: 0,
         bestSleepTime: '0h 0m',
         worstSleepTime: '0h 0m',
       };
     }
 
-    const totalDuration = sleepSessions.reduce((acc, session) => acc + session.duration, 0);
+    const totalDuration = sleepSessions.reduce((acc, session) => acc + getDuration(session.startTime, session.endTime), 0);
     const averageDuration = Math.round(totalDuration / sleepSessions.length);
     
     const qualityScores = sleepSessions.map(s => {
@@ -130,11 +133,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
     });
     const averageQuality = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length;
 
-    const totalEfficiency = sleepSessions.reduce((acc, session) => {
-      return acc + (session.duration / (session.duration + session.awakeTime)) * 100;
-    }, 0);
-    const sleepEfficiency = Math.round(totalEfficiency / sleepSessions.length);
-
     // Calculate consistency (how often you sleep at similar times)
     const bedtimes = sleepSessions.map(s => s.startTime.getHours());
     const bedtimeVariance = Math.sqrt(
@@ -143,10 +141,10 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
     const consistencyScore = Math.max(0, 100 - bedtimeVariance * 5);
 
     const bestSession = sleepSessions.reduce((best, current) => 
-      current.duration > best.duration ? current : best
+      getDuration(current.startTime, current.endTime) > getDuration(best.startTime, best.endTime) ? current : best
     );
     const worstSession = sleepSessions.reduce((worst, current) => 
-      current.duration < worst.duration ? current : worst
+      getDuration(current.startTime, current.endTime) < getDuration(worst.startTime, worst.endTime) ? current : worst
     );
 
     return {
@@ -156,10 +154,9 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
                      averageQuality >= 2.5 ? SleepQuality.GOOD :
                      averageQuality >= 1.5 ? SleepQuality.FAIR : SleepQuality.POOR,
       totalSleepTime: totalDuration,
-      sleepEfficiency,
       consistencyScore: Math.round(consistencyScore),
-      bestSleepTime: `${Math.floor(bestSession.duration / 60)}h ${bestSession.duration % 60}m`,
-      worstSleepTime: `${Math.floor(worstSession.duration / 60)}h ${worstSession.duration % 60}m`,
+      bestSleepTime: `${Math.floor(getDuration(bestSession.startTime, bestSession.endTime) / 60)}h ${getDuration(bestSession.startTime, bestSession.endTime) % 60}m`,
+      worstSleepTime: `${Math.floor(getDuration(worstSession.startTime, worstSession.endTime) / 60)}h ${getDuration(worstSession.startTime, worstSession.endTime) % 60}m`,
     };
   };
 
@@ -171,6 +168,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
         ...session,
         date: session.startTime.toLocaleDateString(),
         time: session.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        duration: getDuration(session.startTime, session.endTime),
       }));
   };
 
@@ -180,8 +178,8 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
     const recentSessions = sleepSessions.slice(-7);
     if (recentSessions.length < 2) return 'stable';
     
-    const recentAvg = recentSessions.reduce((acc, s) => acc + s.duration, 0) / recentSessions.length;
-    const previousAvg = sleepSessions.slice(-14, -7).reduce((acc, s) => acc + s.duration, 0) / 7;
+    const recentAvg = recentSessions.reduce((acc, s) => acc + getDuration(s.startTime, s.endTime), 0) / recentSessions.length;
+    const previousAvg = sleepSessions.slice(-14, -7).reduce((acc, s) => acc + getDuration(s.startTime, s.endTime), 0) / 7;
     
     if (recentAvg > previousAvg * 1.1) return 'improving';
     if (recentAvg < previousAvg * 0.9) return 'declining';
@@ -232,7 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
 
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -252,31 +250,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} md={3}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <StyledCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h3" component="div" sx={{ color: 'primary.main', mb: 1 }}>
-                  {stats.sleepEfficiency}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Sleep Efficiency
-                </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={stats.sleepEfficiency} 
-                  sx={{ mt: 2, height: 8, borderRadius: 4 }}
-                />
-              </CardContent>
-            </StyledCard>
-          </motion.div>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -296,7 +270,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -470,5 +444,3 @@ const Dashboard: React.FC<DashboardProps> = ({ sleepSessions }) => {
 };
 
 export default Dashboard;
-
-

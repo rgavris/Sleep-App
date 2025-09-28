@@ -25,8 +25,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
@@ -65,7 +63,11 @@ interface SleepAnalyticsProps {
 
 const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
-  const [chartType, setChartType] = useState<'duration' | 'quality' | 'stages'>('duration');
+  const [chartType, setChartType] = useState<'duration' | 'quality'>('duration');
+
+  const getDuration = (startTime: Date, endTime: Date) => {
+    return (endTime.getTime() - startTime.getTime()) / (1000 * 60); // duration in minutes
+  }
 
   const getTimeRangeData = () => {
     const now = new Date();
@@ -92,7 +94,7 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
         month: 'short', 
         day: 'numeric' 
       }),
-      duration: session.duration,
+      duration: getDuration(session.startTime, session.endTime),
       quality: session.quality,
     }));
   };
@@ -117,23 +119,6 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
     }));
   };
 
-  const getSleepStagesData = () => {
-    const sessions = getTimeRangeData();
-    if (sessions.length === 0) return [];
-
-    const totalDeep = sessions.reduce((acc, session) => acc + session.deepSleep, 0);
-    const totalLight = sessions.reduce((acc, session) => acc + session.lightSleep, 0);
-    const totalREM = sessions.reduce((acc, session) => acc + session.remSleep, 0);
-    const totalAwake = sessions.reduce((acc, session) => acc + session.awakeTime, 0);
-
-    return [
-      { name: 'Deep Sleep', value: totalDeep, color: '#1e40af' },
-      { name: 'Light Sleep', value: totalLight, color: '#3b82f6' },
-      { name: 'REM Sleep', value: totalREM, color: '#8b5cf6' },
-      { name: 'Awake Time', value: totalAwake, color: '#ef4444' },
-    ];
-  };
-
   const getSleepTrends = (): SleepTrend[] => {
     const sessions = getTimeRangeData();
     return sessions.map(session => ({
@@ -141,9 +126,8 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
         month: 'short', 
         day: 'numeric' 
       }),
-      duration: session.duration,
+      duration: getDuration(session.startTime, session.endTime),
       quality: session.quality,
-      efficiency: Math.round((session.duration / (session.duration + session.awakeTime)) * 100),
     }));
   };
 
@@ -151,7 +135,7 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
     const sessions = getTimeRangeData();
     if (sessions.length === 0) return null;
 
-    const totalDuration = sessions.reduce((acc, session) => acc + session.duration, 0);
+    const totalDuration = sessions.reduce((acc, session) => acc + getDuration(session.startTime, session.endTime), 0);
     const averageDuration = Math.round(totalDuration / sessions.length);
     
     const qualityScores = sessions.map(s => {
@@ -165,12 +149,7 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
     });
     const averageQuality = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length;
 
-    const totalEfficiency = sessions.reduce((acc, session) => {
-      return acc + (session.duration / (session.duration + session.awakeTime)) * 100;
-    }, 0);
-    const averageEfficiency = Math.round(totalEfficiency / sessions.length);
-
-    return { averageDuration, averageQuality, averageEfficiency };
+    return { averageDuration, averageQuality };
   };
 
   const averages = calculateAverages();
@@ -209,24 +188,6 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
               </Pie>
               <Tooltip />
             </PieChart>
-          </ResponsiveContainer>
-        );
-      case 'stages':
-        return (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={getSleepStagesData()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stackId="1" 
-                stroke="#0ea5e9" 
-                fill="#0ea5e9" 
-              />
-            </AreaChart>
           </ResponsiveContainer>
         );
       default:
@@ -277,15 +238,12 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
           <ToggleButton value="quality" aria-label="quality">
             Quality
           </ToggleButton>
-          <ToggleButton value="stages" aria-label="stages">
-            Stages
-          </ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -304,31 +262,7 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <StyledCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Sleep Efficiency
-                </Typography>
-                <Typography variant="h3" component="div" sx={{ color: 'primary.main' }}>
-                  {averages ? `${averages.averageEfficiency}%` : '0%'}
-                </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={averages ? averages.averageEfficiency : 0} 
-                  sx={{ mt: 2 }}
-                />
-              </CardContent>
-            </StyledCard>
-          </motion.div>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -366,7 +300,6 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
             <Typography variant="h6" gutterBottom>
               {chartType === 'duration' && 'Sleep Duration Over Time'}
               {chartType === 'quality' && 'Sleep Quality Distribution'}
-              {chartType === 'stages' && 'Sleep Stages Breakdown'}
             </Typography>
             {renderChart()}
           </CardContent>
@@ -392,7 +325,7 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="efficiency" stroke="#0ea5e9" strokeWidth={2} />
+                    <Line type="monotone" dataKey="duration" stroke="#0ea5e9" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -443,8 +376,3 @@ const SleepAnalytics: React.FC<SleepAnalyticsProps> = ({ sleepSessions }) => {
 };
 
 export default SleepAnalytics;
-
-
-
-
-
