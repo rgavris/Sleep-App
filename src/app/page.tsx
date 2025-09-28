@@ -7,22 +7,28 @@ import Dashboard from '@/components/Dashboard';
 import SleepTracker from '@/components/SleepTracker';
 import SleepAnalytics from '@/components/SleepAnalytics';
 import SleepGoals from '@/components/SleepGoals';
+import UserManagement from '@/components/UserManagement';
 import { SleepSession, SleepGoal } from '@/types/sleep';
 
 const HomePage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([]);
   const [sleepGoals, setSleepGoals] = useState<SleepGoal[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchSessions = async () => {
-      const response = await fetch('/api/sleep');
-      const data = await response.json();
-      setSleepSessions(data.map((session: any) => ({
-        ...session,
-        startTime: new Date(session.startTime),
-        endTime: new Date(session.endTime),
-      })));
+      if (selectedUserId) {
+        const response = await fetch(`/api/sleep?userId=${selectedUserId}`);
+        const data = await response.json();
+        setSleepSessions(data.map((session: any) => ({
+          ...session,
+          startTime: new Date(session.startTime),
+          endTime: new Date(session.endTime),
+        })));
+      } else {
+        setSleepSessions([]);
+      }
     };
     fetchSessions();
 
@@ -31,18 +37,18 @@ const HomePage: React.FC = () => {
     if (savedGoals) {
       setSleepGoals(JSON.parse(savedGoals));
     }
-  }, []);
-
-
+  }, [selectedUserId]);
 
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
   };
 
-
-
   const handleGoalsChange = (goals: SleepGoal[]) => {
     setSleepGoals(goals);
+  };
+
+  const handleUserChange = (userId: number) => {
+    setSelectedUserId(userId);
   };
 
   const renderCurrentPage = () => {
@@ -50,11 +56,13 @@ const HomePage: React.FC = () => {
       case 'dashboard':
         return <Dashboard sleepSessions={sleepSessions} />;
       case 'tracker':
-        return <SleepTracker />;
+        return <SleepTracker userId={selectedUserId} />;
       case 'analytics':
         return <SleepAnalytics sleepSessions={sleepSessions} />;
       case 'goals':
         return <SleepGoals onGoalsChange={handleGoalsChange} />;
+      case 'user':
+        return <UserManagement onUserChange={handleUserChange} />;
       case 'settings':
         return (
           <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>

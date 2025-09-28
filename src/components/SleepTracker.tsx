@@ -74,7 +74,11 @@ const QualityChip = styled(Chip)<{ quality: SleepQuality }>`
   font-weight: 600;
 `;
 
-const SleepTracker: React.FC = () => {
+interface SleepTrackerProps {
+  userId: number | null;
+}
+
+const SleepTracker: React.FC<SleepTrackerProps> = ({ userId }) => {
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -84,16 +88,20 @@ const SleepTracker: React.FC = () => {
 
   useEffect(() => {
     const fetchSessions = async () => {
-      const response = await fetch('/api/sleep');
-      const data = await response.json();
-      setSleepSessions(data.map((session: any) => ({
-        ...session,
-        startTime: new Date(session.startTime),
-        endTime: new Date(session.endTime),
-      })));
+      if (userId) {
+        const response = await fetch(`/api/sleep?userId=${userId}`);
+        const data = await response.json();
+        setSleepSessions(data.map((session: any) => ({
+          ...session,
+          startTime: new Date(session.startTime),
+          endTime: new Date(session.endTime),
+        })));
+      } else {
+        setSleepSessions([]);
+      }
     };
     fetchSessions();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -117,7 +125,7 @@ const SleepTracker: React.FC = () => {
   };
 
   const saveSession = async () => {
-    if (startTime && currentSession.quality) {
+    if (startTime && currentSession.quality && userId) {
       const endTime = new Date();
       
       const newSession = {
@@ -125,6 +133,7 @@ const SleepTracker: React.FC = () => {
         endTime: endTime.toISOString(),
         quality: currentSession.quality as SleepQuality,
         notes: currentSession.notes || '',
+        userId: userId,
       };
 
       const response = await fetch('/api/sleep', {
@@ -135,7 +144,6 @@ const SleepTracker: React.FC = () => {
         body: JSON.stringify(newSession),
       });
       const savedSession = await response.json();
-console.log(savedSession);
 
       setSleepSessions(prev => [...prev, {
         ...savedSession,
@@ -215,6 +223,7 @@ console.log(savedSession);
                       size="large"
                       startIcon={<Bedtime />}
                       onClick={startTracking}
+                      disabled={!userId}
                       sx={{ 
                         bgcolor: 'rgba(255,255,255,0.2)', 
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } 

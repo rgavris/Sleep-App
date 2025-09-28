@@ -11,6 +11,7 @@ export async function getDb() {
       filename: './sleep.db',
       driver: sqlite3Verbose.Database
     });
+    await db.exec('PRAGMA foreign_keys = ON;');
     await db.migrate({
         migrationsPath: './migrations'
     });

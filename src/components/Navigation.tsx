@@ -90,6 +90,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'tracker', label: 'Sleep Tracker', icon: <Bedtime />, description: 'Track your sleep sessions' },
     { id: 'analytics', label: 'Analytics', icon: <Analytics />, description: 'Sleep data insights' },
     { id: 'goals', label: 'Goals', icon: <Flag />, description: 'Set and track sleep goals' },
+    { id: 'user', label: 'User Management', icon: <Person />, description: 'Manage users' },
     { id: 'settings', label: 'Settings', icon: <Settings />, description: 'App preferences' },
   ];
 
