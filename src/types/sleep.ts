@@ -1,16 +1,9 @@
 export interface SleepSession {
-  id: string;
+  id: number;
   startTime: Date;
   endTime: Date;
-  duration: number; // in minutes
   quality: SleepQuality;
-  deepSleep: number; // in minutes
-  lightSleep: number; // in minutes
-  remSleep: number; // in minutes
-  awakeTime: number; // in minutes
-  heartRate: number[];
-  notes: string;
-  tags: string[];
+  notes?: string;
 }
 
 export interface SleepEntry {

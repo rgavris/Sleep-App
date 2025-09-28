@@ -76,7 +76,7 @@ interface SleepGoalsProps {
 
 const SleepGoals: React.FC<SleepGoalsProps> = ({ onGoalsChange }) => {
   const [goals, setGoals] = useState<SleepGoal[]>([]);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [editingGoal, setEditingGoal] = useState<SleepGoal | null>(null);
   const [formData, setFormData] = useState<Partial<SleepGoal>>({});
 
